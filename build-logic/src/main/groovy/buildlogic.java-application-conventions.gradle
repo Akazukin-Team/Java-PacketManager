@@ -1,0 +1,48 @@
+plugins {
+    id 'application'
+}
+
+Properties props = new Properties()
+try (FileInputStream fis = new FileInputStream(new File(parent.rootDir.getPath(), 'application.properties'))) {
+    props.load(fis)
+}
+
+
+File testDir = new File(parent.projectDir.getPath(), 'run/')
+
+tasks.withType(JavaExec).configureEach {
+    doFirst {
+        testDir.mkdirs()
+    }
+    workingDir = testDir
+
+    standardInput = System.in
+    mainClass.set(props.getProperty('mainClass'))
+
+
+    jvmArgs.addAll(['-Xms512M', '-Xmx2G',
+                    '-XX:+UnlockExperimentalVMOptions', '-XX:+UnlockDiagnosticVMOptions',
+                    '-XX:-UseGCOverheadLimit', '-XX:ReservedCodeCacheSize=256M',
+                    '-server', '-XX:+TieredCompilation',
+                    '-XX:MaxInlineSize=64', '-XX:FreqInlineSize=450', '-XX:MaxInlineLevel=20',
+                    '-XX:+UseCompressedOops', '-XX:+UseStringDeduplication', '-XX:+OptimizeStringConcat',
+                    '-XX:+AlwaysPreTouch',
+                    '-XX:+CrashOnOutOfMemoryError', '-XX:+HeapDumpOnOutOfMemoryError',
+                    '-Dsun.stdout.encoding=UTF-8', '-Dsun.stderr.encoding=UTF-8'])
+    if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_1_9)) {
+        jvmArgs += '-XX:+UseFastAccessorMethods'
+    }
+    if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_13)) {
+        jvmArgs += '-XX:+AggressiveOpts'
+    }
+
+    if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_12)) {
+    } else if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_17)) {
+        jvmArgs += ' -XX:+UseShenandoahGC'
+    } else {
+        jvmArgs += '-XX:+UseZGC'
+        if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_21)) {
+            jvmArgs += '-XX:+ZGenerational'
+        }
+    }
+}

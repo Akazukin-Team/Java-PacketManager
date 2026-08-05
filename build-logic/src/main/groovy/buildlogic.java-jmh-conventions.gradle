@@ -1,0 +1,68 @@
+plugins {
+    id 'java'
+    id 'me.champeau.jmh'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    jmh libs.jmh.core
+    jmh libs.jmh.apt
+    jmh libs.jmh.bytecode
+
+    jmh libs.lombok
+    jmh libs.slf4j
+}
+
+jmh {
+    warmupIterations = 5
+    iterations = 8
+    fork = 3
+
+    warmup = '5s'
+    warmupBatchSize = 1
+    warmupForks = 0
+
+    batchSize = 1
+    threads = 1
+    jmhTimeout = '20s'
+
+    failOnError = true
+    forceGC = true
+
+    resultFormat = 'CSV'
+    timeUnit = 'ms'
+    benchmarkMode = ['avgt']
+
+
+    jvmArgs.addAll(['-Xms256M', '-Xmx512M',
+                    '-XX:+UnlockExperimentalVMOptions', '-XX:+UnlockDiagnosticVMOptions',
+                    '-XX:-UseGCOverheadLimit', '-XX:ReservedCodeCacheSize=256M',
+                    '-server', '-XX:+TieredCompilation',
+                    '-XX:MaxInlineSize=64', '-XX:FreqInlineSize=450', '-XX:MaxInlineLevel=20',
+                    '-XX:+UseCompressedOops', '-XX:+UseStringDeduplication', '-XX:+OptimizeStringConcat',
+                    '-XX:+AlwaysPreTouch',
+                    '-XX:+CrashOnOutOfMemoryError', '-XX:+HeapDumpOnOutOfMemoryError',
+                    '-Dsun.stdout.encoding=UTF-8', '-Dsun.stderr.encoding=UTF-8'])
+    if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_1_9)) {
+        jvmArgs += '-XX:+UseFastAccessorMethods'
+    }
+    if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_13)) {
+        jvmArgs += '-XX:+AggressiveOpts'
+    }
+
+    if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_12)) {
+    } else if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_17)) {
+        jvmArgs += ' -XX:+UseShenandoahGC'
+    } else if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_21)) {
+        jvmArgs += '-XX:+UseZGC'
+        if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_21)) {
+            jvmArgs += '-XX:+ZGenerational'
+        }
+    }
+
+    jmhVersion = '1.37'
+    zip64 = true
+}
